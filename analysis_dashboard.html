@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Brenda Vision — Dashboard</title>
+  <style>
+    :root{
+      --bg:#0b0b10;
+      --panel:#0f1020;
+      --muted:#9aa0b4;
+      --glass: rgba(255,255,255,0.03);
+      --accent:#9c27b0;
+      --accent-2:#b388ff;
+      --ok:#4caf50;
+      --err:#ff6b6b;
+      --card-radius:14px;
+      --glow-strong: 0 14px 60px rgba(156,39,176,0.14);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial}
+    body{
+      background:
+        radial-gradient(1200px 600px at 10% 10%, rgba(156,39,176,0.08), transparent 10%),
+        radial-gradient(900px 400px at 90% 90%, rgba(179,136,255,0.04), transparent 10%),
+        var(--bg);
+      color:#eef2ff;
+      -webkit-font-smoothing:antialiased;
+      padding:28px;
+      display:flex;
+      justify-content:center;
+    }
+
+    .shell{
+      width:1100px;
+      max-width:calc(100% - 40px);
+      display:grid;
+      grid-template-columns: 1fr 380px;
+      gap:20px;
+      align-items:start;
+    }
+
+    header{
+      grid-column:1/-1;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      margin-bottom:4px;
+    }
+
+    h1{
+      margin:0;
+      font-size:20px;
+      letter-spacing:0.2px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+
+    .logo {
+      width:44px;height:44px;border-radius:10px;
+      background:linear-gradient(135deg,var(--accent),var(--accent-2));
+      box-shadow:0 6px 30px rgba(156,39,176,0.24), inset 0 -6px 18px rgba(0,0,0,0.25);
+      display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:18px;
+    }
+
+    .muted { color:var(--muted); font-size:13px; }
+
+    /* left panel */
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:var(--card-radius);
+      padding:14px;
+      box-shadow: var(--glow-strong);
+      border:1px solid rgba(255,255,255,0.03);
+    }
+
+    #videoWrap{
+      position:relative;
+      border-radius:12px;
+      overflow:hidden;
+      background:#000;
+      box-shadow:0 12px 40px rgba(156,39,176,0.05);
+    }
+
+    video{
+      width:100%;
+      height:auto;
+      display:block;
+      background:#000;
+      transform: scaleX(-1); /* mirror for user */
+    }
+
+    canvas{
+      position:absolute; left:0; top:0; pointer-events:none;
+      width:100%; height:100%;
+      transform: scaleX(-1); /* match mirrored video */
+    }
+
+    /* right sidebar */
+    #info{
+      display:flex;flex-direction:column; gap:12px;
+      height:calc(100% - 0px);
+    }
+
+    .stat {
+      display:flex;justify-content:space-between;align-items:center;
+      gap:8px;padding:10px;border-radius:10px;background:var(--glass);
+      border:1px solid rgba(255,255,255,0.02);
+    }
+
+    .status-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px}
+    .status-ok{background:var(--ok)} .status-err{background:var(--err)} .status-warn{background:#ffb74d}
+
+    .result-box{
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));
+      padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);
+      min-height:140px; max-height:420px; overflow:auto; font-size:13px;
+    }
+
+    .label { font-size:12px;color:var(--muted); margin-bottom:6px; }
+
+    .controls { display:flex; gap:8px; flex-wrap:wrap; }
+    input[type="text"], input[type="number"], select{
+      background:transparent;border:1px solid rgba(255,255,255,0.04);padding:10px;border-radius:8px;color:inherit;
+      min-width:0;
+    }
+
+    button.primary{
+      background: linear-gradient(90deg,var(--accent),var(--accent-2));
+      border:none;color:white;padding:10px 14px;border-radius:10px;font-weight:600;
+      box-shadow:0 10px 30px rgba(156,39,176,0.12);
+      cursor:pointer; transition:transform .12s ease, box-shadow .12s ease;
+    }
+    button.primary:hover{ transform:translateY(-2px); box-shadow:0 18px 40px rgba(156,39,176,0.18); }
+    button.ghost{ background:transparent;border:1px solid rgba(255,255,255,0.04); padding:8px 12px;border-radius:8px;color:var(--muted); cursor:pointer }
+
+    .small { font-size:12px;color:var(--muted) }
+    .commands { font-size:12px;color:#cfc6e9; line-height:1.5; }
+
+    footer{ grid-column:1/-1; margin-top:6px; color:var(--muted); font-size:12px; display:flex; justify-content:space-between; align-items:center; gap:10px }
+
+    /* enrollment modal */
+    .modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(6,4,10,0.6); z-index:60 }
+    .modal-inner { background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:18px; border-radius:12px; width:420px; max-width:94%; border:1px solid rgba(255,255,255,0.04); }
+    .row { display:flex; gap:8px; align-items:center }
+
+    /* small toggles */
+    .toggle {
+      display:inline-flex; align-items:center; gap:8px;
+      background:transparent;border-radius:999px;padding:6px;border:1px solid rgba(255,255,255,0.03);
+    }
+    .chip { padding:6px 10px;border-radius:999px;background:rgba(156,39,176,0.06); color:var(--accent-2); font-weight:600; font-size:13px }
+
+    /* responsive */
+    @media (max-width:1080px){
+      .shell{ grid-template-columns: 1fr; }
+      header{ flex-direction:column; align-items:flex-start; gap:8px }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="logo">B</div>
+        <div>
+          <h1>Brenda Vision</h1>
+          <div class="muted">Realtime face, gesture & emotion dashboard — purple glow edition</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="muted">Endpoint:</div>
+        <input id="endpoint" type="text" value="http://127.0.0.1:5000/analyze" style="width:320px" />
+      </div>
+    </header>
+
+    <!-- video + overlay -->
+    <div class="panel" id="leftPanel">
+      <div id="videoWrap">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:12px;align-items:center;justify-content:space-between">
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="stat"><span class="status-dot status-ok" id="connDot"></span><span id="connLabel">Not connected</span></div>
+          <div class="stat"><strong id="fps">0</strong><span class="small" style="margin-left:6px">FPS</span></div>
+          <div class="stat"><strong id="latency">-</strong><span class="small" style="margin-left:6px">ms</span></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="primary" id="btnStart">Start</button>
+          <button class="ghost" id="btnStop" disabled>Stop</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- right sidebar -->
+    <div id="info">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="label">Last Analysis</div>
+            <div class="small">Shows top person detected (pose + face)</div>
+          </div>
+          <div class="toggle">
+            <label style="font-size:13px">Show skeleton</label>
+            <input id="toggleSkeleton" type="checkbox" checked style="margin-left:6px"/>
+          </div>
+        </div>
+        <div class="result-box" id="jsonOut">No frames yet — press Start</div>
+      </div>
+
+      <div class="panel">
+        <div class="label">Face Recognition</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="enrollName" type="text" placeholder="Name to enroll (e.g. Ian)" />
+          <button class="primary" id="enrollBtn">Enroll</button>
+        </div>
+        <div class="small" style="margin-top:8px">Enroll uses the current camera frame. Make sure face is centered and well-lit. Enroll 6–12 samples for best results.</div>
+      </div>
+
+      <div class="panel">
+        <div class="label">Voice Tools</div>
+        <div style="display:flex;gap:8px">
+          <button class="primary" id="voiceBtn">Record Voice (5s)</button>
+          <button class="ghost" id="cmdBtn">Start Commands</button>
+        </div>
+        <div class="commands" style="margin-top:8px">
+          • "Hello Brenda" → Greeting<br>
+          • "How do I look" → Emotion report<br>
+          • "Wave" → Brenda waves back<br>
+          • "Stop" → Stop listening
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="label">Settings</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <div class="small">Interval (ms)</div>
+          <input id="interval" type="number" value="900" min="300" max="5000" step="50" style="width:120px"/>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="primary" id="testHealth">Health</button>
+          <button class="ghost" id="downloadImg">Download Snapshot</button>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="muted">Local server at <strong>http://127.0.0.1:5000</strong> (adhoc certificate)</div>
+      <div class="muted">Made with ♥ — Brenda A/V</div>
+    </footer>
+  </div>
+
+  <!-- Enrollment modal -->
+  <div class="modal" id="modal">
+    <div class="modal-inner">
+      <div style="font-weight:700;margin-bottom:8px">Enroll Face</div>
+      <div class="small" style="margin-bottom:12px">Confirm name and press "Capture & Enroll". A snapshot will be sent to the backend.</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input id="modalName" type="text" placeholder="Name" style="flex:1"/>
+        <button class="primary" id="modalEnroll">Capture & Enroll</button>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button class="ghost" id="modalCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      // ---------- DOM ----------
+      const video = document.getElementById('video');
+      const overlay = document.getElementById('overlay');
+      const ctx = overlay.getContext('2d');
+      const jsonOut = document.getElementById('jsonOut');
+      const fpsEl = document.getElementById('fps');
+      const latencyEl = document.getElementById('latency');
+      const connDot = document.getElementById('connDot');
+      const connLabel = document.getElementById('connLabel');
+
+      const btnStart = document.getElementById('btnStart');
+      const btnStop = document.getElementById('btnStop');
+      const enrollBtn = document.getElementById('enrollBtn');
+      const enrollName = document.getElementById('enrollName');
+      const voiceBtn = document.getElementById('voiceBtn');
+      const cmdBtn = document.getElementById('cmdBtn');
+      const testHealth = document.getElementById('testHealth');
+      const downloadImg = document.getElementById('downloadImg');
+      const intervalInput = document.getElementById('interval');
+      const endpointInput = document.getElementById('endpoint');
+      const toggleSkeleton = document.getElementById('toggleSkeleton');
+
+      const modal = document.getElementById('modal');
+      const modalName = document.getElementById('modalName');
+      const modalEnroll = document.getElementById('modalEnroll');
+      const modalCancel = document.getElementById('modalCancel');
+
+      // ---------- STATE ----------
+      let stream = null;
+      let tickTimer = null;
+      let framesSent = 0;
+      let lastSpeakKey = '';
+      let recognition = null;
+      let listening = false;
+      let mediaRecorder = null;
+
+      // COCO skeleton (17‑key)
+      const SKELETON = [
+        [0,1],[0,2],[1,3],[2,4],
+        [0,5],[0,6],[5,7],[7,9],
+        [6,8],[8,10],[5,6],[11,12],
+        [11,13],[13,15],[12,14],[14,16]
+      ];
+
+      // ---------- CANVAS ----------
+      function resizeCanvas(){
+        const rect = video.getBoundingClientRect();
+        overlay.width = rect.width;
+        overlay.height = rect.height;
+        overlay.style.width = rect.width + 'px';
+        overlay.style.height = rect.height + 'px';
+      }
+
+      // ---------- TTS ----------
+      function speak(text){
+        try{
+          const u = new SpeechSynthesisUtterance(text);
+          u.rate = 0.95; u.pitch = 1.05;
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(u);
+        }catch(e){ console.warn('TTS', e); }
+      }
+
+      // ---------- CAPTURE ----------
+      async function captureFrameAsJpeg(){
+        const cv = document.createElement('canvas');
+        const w = video.videoWidth || 1280;
+        const h = video.videoHeight || 720;
+        cv.width = w; cv.height = h;
+        const c = cv.getContext('2d');
+        c.translate(w, 0); c.scale(-1, 1);
+        c.drawImage(video, 0, 0, w, h);
+        return new Promise(res => {
+          cv.toBlob(blob => {
+            const r = new FileReader();
+            r.onloadend = () => res(r.result.split(',')[1]);
+            r.readAsDataURL(blob);
+          }, 'image/jpeg', 0.78);
+        });
+      }
+
+      // ---------- DRAW ----------
+      function drawPose(keypoints){
+        if(!keypoints?.length) return;
+        const scaleX = overlay.width / video.videoWidth;
+        const scaleY = overlay.height / video.videoHeight;
+
+        // bones
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(179,136,255,0.9)';
+        ctx.globalAlpha = 0.95;
+        SKELETON.forEach(([i,j]) => {
+          const a = keypoints[i], b = keypoints[j];
+          if(a?.[2] > 0.15 && b?.[2] > 0.15){
+            ctx.beginPath();
+            ctx.moveTo(a[0]*scaleX, a[1]*scaleY);
+            ctx.lineTo(b[0]*scaleX, b[1]*scaleY);
+            ctx.stroke();
+          }
+        });
+
+        // joints
+        keypoints.forEach(kp => {
+          if(!kp || kp[2] < 0.12) return;
+          const [x,y] = [kp[0]*scaleX, kp[1]*scaleY];
+          ctx.beginPath(); ctx.fillStyle = 'rgba(156,39,176,0.95)'; ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fill();
+          ctx.beginPath(); ctx.fillStyle = '#fff'; ctx.arc(x, y, 2.2, 0, Math.PI*2); ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+      }
+
+      function drawBox([x1,y1,x2,y2], label){
+        const scaleX = overlay.width / video.videoWidth;
+        const scaleY = overlay.height / video.videoHeight;
+        const lx = x1*scaleX, ty = y1*scaleY, rw = (x2-x1)*scaleX, rh = (y2-y1)*scaleY;
+
+        const grad = ctx.createLinearGradient(lx, ty, lx+rw, ty+rh);
+        grad.addColorStop(0, 'rgba(156,39,176,0.95)');
+        grad.addColorStop(1, 'rgba(179,136,255,0.85)');
+        ctx.lineWidth = 3; ctx.strokeStyle = grad; ctx.strokeRect(lx, ty, rw, rh);
+
+        // status dot
+        ctx.fillStyle = '#9ff0c3';
+        ctx.beginPath(); ctx.arc(lx+12, ty+12, 7, 0, Math.PI*2); ctx.fill();
+
+        // label bg
+        ctx.fillStyle = 'rgba(12,10,16,0.8)';
+        ctx.font = '14px Inter, Arial';
+        const tw = ctx.measureText(label).width;
+        ctx.fillRect(lx, ty + rh + 6, tw + 20, 28);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(label, lx + 10, ty + rh + 26);
+      }
+
+      // ---------- RESULT ----------
+      function updateResult(data){
+        ctx.clearRect(0,0,overlay.width, overlay.height);
+        if(!data?.faces?.length){
+          jsonOut.innerHTML = '<div style="color:#ffb86b">No person detected</div>';
+          return;
+        }
+
+        const f = data.faces[0];
+        const loc = f.location || [];
+        const kps = f.pose_keypoints || [];
+
+        if(toggleSkeleton.checked && kps.length) drawPose(kps);
+        if(loc.length === 4){
+          const label = `${f.name||'Unknown'} • #${f.track_id||'–'} • ${f.emotion||'–'} ${(f.emotion_confidence*100||0).toFixed(0)}%`;
+          drawBox(loc, label);
+        }
+
+        const metrics = f.metrics || {};
+        const metricsHtml = metrics.cosine_similarity !== undefined
+          ? `<div class="small">Match: <strong>${(metrics.cosine_similarity||0).toFixed(3)}</strong> • CosDist: <strong>${(metrics.cosine_distance||0).toFixed(3)}</strong> • Mahalanobis: <strong>${(metrics.mahalanobis||0).toFixed(3)}</strong></div>`
+          : '';
+
+        jsonOut.innerHTML = `
+          <div style="display:flex;justify-content:space-between">
+            <div><strong style="color:var(--accent)">${f.name||'Unknown'}</strong></div>
+            <div class="small">Latency: ${data._latency_ms ?? '-'} ms</div>
+          </div>
+          <div style="margin-top:8px">
+            <div class="small">Track ID: <strong>#${f.track_id ?? '—'}</strong></div>
+            <div class="small">Emotion: <strong>${f.emotion ?? '—'}</strong> (${(f.emotion_confidence*100||0).toFixed(0)}%)</div>
+            <div class="small">Posture: <strong>${f.posture ?? '—'}</strong></div>
+            <div class="small">Gesture: <strong>${f.gesture ?? '—'}</strong></div>
+            ${metricsHtml}
+            <div style="margin-top:10px;color:#bfb">${data.speak ? `<em>"${data.speak}"</em>` : ''}</div>
+          </div>
+        `;
+
+        const speakKey = `${f.track_id}|${f.name}|${f.emotion}|${f.gesture||''}`;
+        if(data.speak && speakKey !== lastSpeakKey){
+          speak(data.speak);
+          lastSpeakKey = speakKey;
+        }
+      }
+
+      // ---------- SEND ----------
+      async function sendFrame(){
+        const endpoint = endpointInput.value.trim();
+        if(!endpoint) return;
+        try{
+          const b64 = await captureFrameAsJpeg();
+          const start = performance.now();
+          const res = await fetch(endpoint, {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ image: b64 })
+          });
+          const json = await res.json();
+          const elapsed = Math.round(performance.now() - start);
+          latencyEl.textContent = json._latency_ms ?? elapsed;
+
+          // FPS
+          framesSent++;
+          const now = Date.now();
+          if(!window.__fpsStart) window.__fpsStart = now;
+          const secs = (now - window.__fpsStart)/1000;
+          if(secs >= 1){
+            fpsEl.textContent = (framesSent/secs).toFixed(1);
+            framesSent = 0; window.__fpsStart = now;
+          }
+
+          updateResult(json);
+          connDot.className = 'status-dot status-ok';
+          connLabel.textContent = 'Connected';
+        }catch(err){
+          connDot.className = 'status-dot status-err';
+          connLabel.textContent = 'Error';
+          jsonOut.innerHTML = `<div style="color:var(--err)">${err.message}</div>`;
+          console.error(err);
+        }
+      }
+
+      // ---------- CAMERA ----------
+      async function startStream(){
+        try{
+          if(!stream){
+            stream = await navigator.mediaDevices.getUserMedia({ video:{ width:1280, height:720 }, audio:false });
+            video.srcObject = stream;
+            await video.play();
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+          }
+          const interval = Math.max(300, Number(intervalInput.value) || 900);
+          if(tickTimer) clearInterval(tickTimer);
+          tickTimer = setInterval(sendFrame, interval);
+          btnStart.disabled = true; btnStop.disabled = false;
+          connDot.className = 'status-dot status-warn';
+          connLabel.textContent = 'Running';
+        }catch(err){
+          connDot.className = 'status-dot status-err';
+          connLabel.textContent = 'Camera error';
+          jsonOut.innerHTML = `<div style="color:var(--err)">${err.message}</div>`;
+        }
+      }
+
+      function stopStream(){
+        if(tickTimer) clearInterval(tickTimer);
+        if(stream) stream.getTracks().forEach(t=>t.stop());
+        stream = null;
+        video.pause(); video.srcObject = null;
+        btnStart.disabled = false; btnStop.disabled = true;
+        connDot.className = 'status-dot';
+        connLabel.textContent = 'Stopped';
+        ctx.clearRect(0,0,overlay.width, overlay.height);
+      }
+
+      // ---------- ENROLL ----------
+      async function enrollWithName(name){
+        enrollBtn.disabled = true;
+        enrollBtn.textContent = 'Enrolling…';
+        try{
+          const b64 = await captureFrameAsJpeg();
+          const ep = endpointInput.value.trim().replace(/\/analyze\/?$/,'') + '/enroll';
+          const res = await fetch(ep, {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ name, image: b64 })
+          });
+          const json = await res.json();
+          if(json.status === 'enrolled'){
+            speak(`Enrolled ${name}`);
+            jsonOut.innerHTML = `<div style="color:var(--accent)"><strong>${name}</strong> enrolled.</div>`;
+          }else{
+            speak('Enrollment failed');
+            jsonOut.innerHTML = `<div style="color:#ff8b8b">Error: ${json.error||JSON.stringify(json)}</div>`;
+          }
+        }catch(err){
+          speak('Network error');
+          jsonOut.innerHTML = `<div style="color:#ff8b8b">Network: ${err.message}</div>`;
+        }finally{
+          enrollBtn.disabled = false;
+          enrollBtn.textContent = 'Enroll';
+        }
+      }
+
+      enrollBtn.addEventListener('click', () => {
+        const name = enrollName.value.trim();
+        if(!name){ modalName.value=''; modal.style.display='flex'; modalName.focus(); return; }
+        enrollWithName(name);
+      });
+      modalCancel.addEventListener('click',()=>modal.style.display='none');
+      modalEnroll.addEventListener('click',()=>{ const n=modalName.value.trim(); if(n){ modal.style.display='none'; enrollWithName(n); } });
+
+      // ---------- VOICE ----------
+      voiceBtn.addEventListener('click', async ()=>{
+        voiceBtn.disabled = true; voiceBtn.textContent = 'Recording…';
+        try{
+          const mic = await navigator.mediaDevices.getUserMedia({audio:true});
+          mediaRecorder = new MediaRecorder(mic);
+          const chunks = [];
+          mediaRecorder.ondataavailable = e=>chunks.push(e.data);
+          mediaRecorder.onstop = async ()=>{
+            const blob = new Blob(chunks,{type:'audio/wav'});
+            const ep = endpointInput.value.trim().replace(/\/analyze\/?$/,'') + '/voice/identify';
+            const form = new FormData(); form.append('audio',blob,'voice.wav');
+            try{
+              const r = await fetch(ep,{method:'POST',body:form});
+              const j = await r.json();
+              if(j.user){
+                speak(`Voice identified as ${j.user}`);
+                jsonOut.innerHTML = `<div style="color:var(--accent)"><strong>Voice:</strong> ${j.user}</div>`;
+              }else{
+                speak('Voice not recognized');
+                jsonOut.innerHTML = `<div style="color:#ffb86b">Voice not recognized</div>`;
+              }
+            }catch(e){
+              jsonOut.innerHTML = `<div style="color:#ff8b8b">Voice network error</div>`;
+            }
+            mic.getTracks().forEach(t=>t.stop());
+            voiceBtn.disabled = false; voiceBtn.textContent = 'Record Voice (5s)';
+          };
+          mediaRecorder.start();
+          setTimeout(()=>mediaRecorder?.state==='recording' && mediaRecorder.stop(),5000);
+        }catch(e){
+          speak('Mic denied');
+          voiceBtn.disabled = false; voiceBtn.textContent = 'Record Voice (5s)';
+        }
+      });
+
+      // ---------- COMMANDS ----------
+      cmdBtn.addEventListener('click',()=>{ listening ? stopListening() : startListening(); });
+      function startListening(){
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if(!SR){ speak('Speech API not supported'); return; }
+        recognition = new SR(); recognition.continuous=true; recognition.interimResults=false; recognition.lang='en-US';
+        recognition.onresult = ev=>{
+          const txt = ev.results[ev.results.length-1][0].transcript.trim().toLowerCase();
+          if(txt.includes('hello brenda')) speak('Hello! How can I help?');
+          else if(txt.includes('how do i look')){ speak('Describing…'); speak(jsonOut.innerText||'No data'); }
+          else if(txt.includes('wave')) speak('Waving back!');
+          else if(txt.includes('stop')){ stopListening(); speak('Stopped'); }
+        };
+        recognition.start(); listening=true; cmdBtn.textContent='Stop Commands'; cmdBtn.classList.add('active');
+      }
+      function stopListening(){
+        if(recognition) recognition.stop(); recognition=null; listening=false;
+        cmdBtn.textContent='Start Commands'; cmdBtn.classList.remove('active');
+      }
+
+      // ---------- HEALTH ----------
+      testHealth.addEventListener('click', async ()=>{
+        const base = endpointInput.value.trim().replace(/\/analyze\/?$/,'');
+        try{
+          const r = await fetch(base + '/health');
+          const j = await r.json();
+          jsonOut.innerHTML = `<div style="color:var(--accent)"><strong>Health:</strong> ${JSON.stringify(j)}</div>`;
+          connDot.className='status-dot status-ok'; connLabel.textContent='Server OK';
+        }catch(e){
+          jsonOut.innerHTML = `<div style="color:#ff8b8b">Health failed: ${e.message}</div>`;
+          connDot.className='status-dot status-err'; connLabel.textContent='Server down';
+        }
+      });
+
+      // ---------- SNAPSHOT ----------
+      downloadImg.addEventListener('click', async ()=>{
+        const b64 = await captureFrameAsJpeg();
+        const a = document.createElement('a');
+        a.href = 'data:image/jpeg;base64,'+b64;
+        a.download = 'snapshot.jpg';
+        a.click(); a.remove();
+      });
+
+      // ---------- BUTTONS ----------
+      btnStart.addEventListener('click', startStream);
+      btnStop.addEventListener('click', stopStream);
+      video.addEventListener('loadedmetadata', resizeCanvas);
+      window.addEventListener('resize', resizeCanvas);
+    })();
+  </script>
+</body>
+</html>
