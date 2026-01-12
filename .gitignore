@@ -1,0 +1,4 @@
+brenda-bio-env/
+__pycache__/
+.env
+yolov8x-pose.pt
