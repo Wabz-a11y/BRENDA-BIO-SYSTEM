@@ -457,6 +457,8 @@
         if(!endpoint) return;
         try{
           const b64 = await captureFrameAsJpeg();
+          /*DEBUG LINE*/
+          console.log("Captured b64 length: ", b64.length);
           const start = performance.now();
           const res = await fetch(endpoint, {
             method:'POST',

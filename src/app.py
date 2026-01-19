@@ -1,6 +1,6 @@
 # app.py
 from flask import Flask, request, jsonify, send_from_directory
-from .vision import BrendaVision
+from vision import BrendaVision
 import threading
 import os
 
