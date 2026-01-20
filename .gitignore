@@ -3,3 +3,4 @@ __pycache__/
 .env
 yolov8x-pose.pt
 face_db/
+archive/
