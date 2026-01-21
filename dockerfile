@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM python:3.11-slim
 
 # Install requirements for cv2 not found in python:3.13-slim
 RUN apt-get update && apt-get install -y \
@@ -12,6 +12,13 @@ RUN useradd -m userapp
 # Set the working dir and ensure it is owned by our userapp user
 WORKDIR /usr/local/app
 RUN chown userapp:userapp /usr/local/app
+
+# Install Large AI & CV Libraries specifying their CPU version
+RUN pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu \
+    && pip install tensorflow-cpu
+
+#Install the gunicorn server
+RUN pip install gunicorn
 
 # Install the application dependencies
 COPY --chown=userapp:userapp requirements.txt ./
@@ -27,4 +34,4 @@ USER userapp
 EXPOSE 8080
 
 # Run the application
-CMD [ "gunicorn", "--bind", "0.0.0.0:8080", "src.app:app" ]
+CMD [ "python", "-m","gunicorn", "--bind", "0.0.0.0:5000", "src.app:app" ]
