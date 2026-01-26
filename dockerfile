@@ -31,7 +31,7 @@ COPY --chown=userapp:userapp src ./src
 USER userapp
 
 # Epose port 8080
-EXPOSE 8080
+EXPOSE 5000
 
 # Run the application
 CMD [ "python", "-m","gunicorn", "--bind", "0.0.0.0:5000", "src.app:app" ]

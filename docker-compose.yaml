@@ -1,0 +1,25 @@
+# Docker compose file
+
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - brenda_bio_network
+    depends_on:
+      - brenda_two
+    
+  brenda_two:
+    image: brenda_two
+    # No ports exposed making the app be in a private subnet
+    networks:
+      - brenda_bio_network
+  
+networks:
+  brenda_bio_network:
+    driver: bridge
