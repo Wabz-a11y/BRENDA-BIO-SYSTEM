@@ -1,10 +1,12 @@
 # app.py
 from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 from .vision import BrendaVision
 import threading
 import os
 
 app = Flask(__name__, static_folder='.', static_url_path='')
+CORS(app)
 vision = BrendaVision()
 
 @app.route('/')
