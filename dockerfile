@@ -23,7 +23,7 @@ RUN pip install gunicorn
 # Install the application dependencies
 COPY --chown=userapp:userapp requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-
+RUN pip install flask-cors
 # Copy in the source code
 COPY --chown=userapp:userapp src ./src
 
@@ -34,4 +34,4 @@ USER userapp
 EXPOSE 5000
 
 # Run the application
-CMD [ "python", "-m","gunicorn", "--bind", "0.0.0.0:5000", "src.app:app" ]
+CMD [ "python", "-m","gunicorn", "--timeout","120", "-w", "1", "--bind", "0.0.0.0:5000", "src.app:app" ]

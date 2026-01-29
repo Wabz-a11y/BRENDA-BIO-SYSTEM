@@ -9,6 +9,7 @@ services:
       - "80:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./src/analysis_dashboard.html:/usr/share/nginx/html/analysis_dashboard.html:ro
     networks:
       - brenda_bio_network
     depends_on:

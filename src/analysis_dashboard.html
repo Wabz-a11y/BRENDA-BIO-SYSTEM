@@ -291,7 +291,7 @@
       const testHealth = document.getElementById('testHealth');
       const downloadImg = document.getElementById('downloadImg');
       const intervalInput = document.getElementById('interval');
-      const endpointInput = document.getElementById('endpoint');
+      const endpointInput = "/analyze";
       const toggleSkeleton = document.getElementById('toggleSkeleton');
 
       const modal = document.getElementById('modal');
@@ -453,7 +453,7 @@
 
       // ---------- SEND ----------
       async function sendFrame(){
-        const endpoint = endpointInput.value.trim();
+        const endpoint = "/analyze";
         if(!endpoint) return;
         try{
           const b64 = await captureFrameAsJpeg();
