@@ -10,10 +10,34 @@ from ultralytics import YOLO
 import tensorflow as tf
 
 # ----------------------------------------------------------------------
+# 1. MODELS (Absolute Path Fix)
+# ----------------------------------------------------------------------
+import os
+
+# This gets the directory where vision.py itself is located
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+FACE_PROTO = os.path.join(BASE_DIR, 'models', 'deploy.prototxt')
+FACE_MODEL = os.path.join(BASE_DIR, 'models', 'res10_300x300_ssd_iter_140000.caffemodel')
+
+# Let's add a "Force Load" check
+if not os.path.exists(FACE_PROTO):
+    # This print will show up in your CMD/Terminal
+    print(f"CRITICAL ERROR: Proto file not found at {FACE_PROTO}")
+    net = None
+else:
+    try:
+        net = cv2.dnn.readNetFromCaffe(FACE_PROTO, FACE_MODEL)
+        print("Success: Face detection model loaded from absolute path.")
+    except Exception as e:
+        print(f"Error loading Caffe model: {e}")
+        net = None
+
+# ----------------------------------------------------------------------
 # 1. MODELS
 # ----------------------------------------------------------------------
-FACE_PROTO = 'models/deploy.prototxt'
-FACE_MODEL = 'models/res10_300x300_ssd_iter_140000.caffemodel'
+#FACE_PROTO = 'models/deploy.prototxt'
+#FACE_MODEL = 'models/res10_300x300_ssd_iter_140000.caffemodel'
 net = cv2.dnn.readNetFromCaffe(FACE_PROTO, FACE_MODEL) if os.path.exists(FACE_MODEL) else None
 
 # ----------------------------------------------------------------------
@@ -144,6 +168,10 @@ class BrendaVision:
         self.tracker = tracker
 
     def analyze_image_b64(self, b64_str: str) -> Dict[str, Any]:
+        # --- 1. INITIALIZE VARIABLES HERE ---
+        pose_boxes = []
+        kps_list = []
+        face_boxes = []
         try:
             img = cv2.imdecode(np.frombuffer(base64.b64decode(b64_str), np.uint8),
                               cv2.IMREAD_COLOR)
@@ -154,10 +182,14 @@ class BrendaVision:
 
             # *** IMPORTANT: NO `fuse=` argument ***
             results = self.yolo(img, imgsz=640, conf=0.4, verbose=False)[0]
+
+            
+
             kps_list = results.keypoints.xy.cpu().numpy() if results.keypoints else []
             pose_boxes = [list(map(int, b)) for b in results.boxes.xyxy.cpu().numpy()] \
                          if results.boxes else []
 
+            
             # Face detection (Caffe DNN)
             if net is None:
                 return {"status": "failed", "error": "Face model not loaded"}
@@ -186,7 +218,7 @@ class BrendaVision:
                 for fx1, fy1, fx2, fy2 in face_boxes:
                     fcx, fcy = (fx1 + fx2) // 2, (fy1 + fy2) // 2
                     dist = abs(fcx - cx) + abs(fcy - cy)
-                    if dist < min_dist and dist < 150:
+                    if dist < min_dist and dist < (w // 3):
                         min_dist = dist
                         best_face = [fx1, fy1, fx2, fy2]
 
@@ -243,10 +275,15 @@ class BrendaVision:
                 "count": len(output),
                 "_latency_ms": latency
             }
+
+            # DEBUG LINE
+            print(f"DEBUG: Detected {len(pose_boxes)} bodies and {len(face_boxes)} faces.")
+
             if output and output[0].get("response"):
                 result["speak"] = output[0]["response"]
             return result
 
+            
         except Exception as e:
             import traceback
             print("Vision Error:", traceback.format_exc())
